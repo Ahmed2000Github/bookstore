@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Text;
@@ -36,20 +37,14 @@ namespace Infrastructure.Repositories
         {
             return table.Find(id);
         }
-
-        public IEnumerable<T> GetFull()
+        public IEnumerable<T> Where(Expression<Func<T, bool>> predicate)
         {
+            return table.Where(predicate);
+        }
 
-            switch (typeof(T))
-            {
-                //case Type type when type == typeof(Like):
-                //    DbSet<Like> likeTable = _dataContext.Set<Like>();
-                //    return (IEnumerable<T>)likeTable.Include(b => b.block).ToList();
-
-                default:
-                    return null;
-                    break;
-            }
+        public IEnumerable<T> GetFull<TProperty>( Expression<Func<T, TProperty>> navigationPropertyPath)
+        {
+            return table.Include(navigationPropertyPath);
         }
         public void Update(T entity)
         {

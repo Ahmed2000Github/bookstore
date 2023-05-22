@@ -1,7 +1,10 @@
 ﻿using BookStoreAPI.Dto;
+using BookStoreAPI.Dto.AuthorDto;
 using Core.Entities;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace BookStoreAPI.Controllers
 {
@@ -16,8 +19,8 @@ namespace BookStoreAPI.Controllers
             this.author = author;
         }
 
-        [HttpGet]
-        public ActionResult<List<Author>> GetAuthorsList()
+        [HttpGet, Authorize(AuthenticationSchemes = "Bearer")]
+        public ActionResult<List<Author>> GetAuthors()
         {
             var authorsList = author.entity.GetAll();
             var authorsDto = authorsList.Select(author => new AuthorResponseDto
@@ -28,8 +31,8 @@ namespace BookStoreAPI.Controllers
             });
             return Ok(authorsDto);
         }
-
-        [HttpPost]
+        
+        [HttpPost, Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
         public ActionResult<string> AddAuthor(AuthorParamsDto parameters)
         {
             author.entity.Add(new Author
@@ -42,8 +45,8 @@ namespace BookStoreAPI.Controllers
             return Ok("Author was added successfully.");
         }
 
-        [HttpPut("{id}")]
-        public ActionResult<string> AddAuthor(Guid id,AuthorParamsDto parameters)
+        [HttpPut("{id}"), Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
+        public ActionResult<string> UpdateAuthor(Guid id,AuthorParamsDto parameters)
         {
             var authorToUpdate = author.entity.GetById(id);
             if (authorToUpdate == null){
@@ -58,7 +61,7 @@ namespace BookStoreAPI.Controllers
 
 
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}"), Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
         public ActionResult<string> DeleteAuthor(Guid id)
         {
             author.entity.Delete(id);

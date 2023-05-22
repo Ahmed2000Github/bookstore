@@ -1,6 +1,8 @@
-﻿namespace Core.Entities
+﻿using Core.Entities;
+
+namespace BookStoreAPI.Dto.BookDto
 {
-    public class Book
+    public class BooksResponseDto
     {
         public Guid Id { get; set; }
         public string Title { get; set; }
@@ -9,7 +11,6 @@
         public int Rate { get; set; }
         public DateTime EditionDate { get; set; }
         public string ImageUrl { get; set; }
-        public string DocUrl { get; set; }
-        public Author Author { get; set; }
+        public string AuthorName { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Core.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,11 @@ using System.Threading.Tasks;
 
 namespace Infrastructure
 {
-    public class DataContext : IdentityDbContext
+    public class AppUser : IdentityUser
+    {
+        public string AvatarUrl { get; set; }
+    }
+    public class DataContext : IdentityDbContext<AppUser>
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {

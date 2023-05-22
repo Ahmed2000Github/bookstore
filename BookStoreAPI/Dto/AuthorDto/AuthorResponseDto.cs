@@ -1,4 +1,4 @@
-﻿namespace BookStoreAPI.Dto
+﻿namespace BookStoreAPI.Dto.AuthorDto
 {
     public class AuthorResponseDto
     {

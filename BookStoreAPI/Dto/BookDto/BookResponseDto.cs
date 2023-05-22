@@ -1,6 +1,8 @@
-﻿namespace Core.Entities
+﻿using Core.Entities;
+
+namespace BookStoreAPI.Dto.BookDto
 {
-    public class Book
+    public class BookResponseDto
     {
         public Guid Id { get; set; }
         public string Title { get; set; }
