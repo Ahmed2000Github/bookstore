@@ -6,6 +6,7 @@ using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace BookStoreAPI.Controllers
 {
@@ -37,13 +38,38 @@ namespace BookStoreAPI.Controllers
                 Rate = book.Rate,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl,
-                AuthorName = book.Author.Name
+                AuthorName = book.Author.Name ?? ""
             });
             return Ok(booksDto);
         }
 
+        [HttpPost, Authorize(AuthenticationSchemes = "Bearer")]
+        public ActionResult SearchBook([FromBody] BookSearchParamsDto parameters)
+        {
+            var booksList = book.entity.GetFull(b => b.Author);
+            var filter = (Book _book) =>
+            {
+                return _book.Title == parameters.Title ||
+                _book.Price == parameters.Price ||
+                _book.EditionDate == DateTime.Parse(parameters.EditionDate ?? "") ||
+                _book.Author.Name == parameters.AuthorName;
+            };
+            var filterBookList = booksList.Where(filter);
+            var booksDto = filterBookList.Select(book => new BooksResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Description = book.Description,
+                Price = book.Price,
+                Rate = book.Rate,
+                EditionDate = book.EditionDate,
+                ImageUrl = book.ImageUrl,
+                AuthorName = book.Author.Name ?? ""
+            });
+            return Ok(booksDto);
+        }
 
-        [HttpGet("{id}"), Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("{id}"), Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
         public ActionResult GetAuthorBooks(Guid id)
         {
             var books = book.entity.Where(x => x.Author.Id == id);
