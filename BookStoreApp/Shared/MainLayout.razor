@@ -1,0 +1,86 @@
+﻿@using MudBlazor.Utilities;
+@inherits LayoutComponentBase
+
+<MudThemeProvider @ref="@_mudThemeProvider"  Theme="@MyCustomTheme" @bind-IsDarkMode="@_isDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudSpacer />
+        <MudIconButton Icon="@modeIcon" OnClick="@ToggleDark" Color="Color.Inherit" />
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="0" >
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">BookStoreApp</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-16 pt-16">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    bool _drawerOpen = true;
+    bool _isDarkMode= false;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+    private string modeIcon => _isDarkMode ? Icons.Filled.DarkMode : Icons.Filled.LightMode;
+    private void ToggleDark() => _isDarkMode = !_isDarkMode;
+
+    private MudThemeProvider _mudThemeProvider;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            StateHasChanged();
+        }
+    }
+
+    MudTheme MyCustomTheme = new MudTheme()
+        {
+            Typography = new Typography()
+            {
+                Default = new Default()
+                {
+                    FontFamily = new[] { "Poppins", "Bold", "Calibri", "sans-serif" }
+                }
+            },
+            Palette = new Palette()
+            {
+                Primary = "#00BCD4",
+                Secondary = "#80DEEA",
+                Background = "#FBFDFD",
+                DrawerBackground = "#FBFDFD",
+                AppbarBackground = "#FBFDFD",
+                TextPrimary = "#000000",
+                AppbarText = "#000000",
+                DrawerText = "#000000",
+                DrawerIcon = "#000000",
+               
+                
+            },
+            PaletteDark = new Palette()
+            {
+                Primary = "#00BCD4",
+                Secondary = "#80DEEA",
+                AppbarBackground = "#041416",
+                TextPrimary = "#FFFFFF",
+                Background = "#041416",
+                DrawerBackground = "#041416",
+                DrawerText = "#FFFFFF",
+                AppbarText = "#FFFFFF",
+                DrawerIcon = "#FFFFFF",
+            }
+
+        };
+}
