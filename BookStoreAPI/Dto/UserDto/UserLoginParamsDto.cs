@@ -8,5 +8,5 @@ namespace BookStoreAPI.Dto.UserDto
         public string Login { get; set; }
         [Required]
         public string Password { get; set; }
-    }  
+    }
 }

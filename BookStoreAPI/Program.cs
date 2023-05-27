@@ -30,6 +30,15 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 builder.Services.AddMemoryCache();
+builder.Services.AddCors(policy =>
+{
+    policy.AddPolicy("_myAllowSpecificOrigins", builder => builder.WithOrigins("https://localhost:44398/")
+    .SetIsOriginAllowed((host) => true)
+         .AllowAnyMethod()
+         .AllowAnyHeader()
+         .AllowCredentials());
+});
+
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 
 //Add Jwt Configurations
@@ -75,6 +84,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthorization();
 app.UseAuthentication();
+app.UseCors("_myAllowSpecificOrigins");
 
 app.MapControllers();
 

@@ -1,0 +1,35 @@
+﻿@using BookStoreApp.Services;
+
+
+
+<style>
+    .custom-dialog {
+        background-color: @CurrentThemeProvider.Instance.Palette.DarkLighten;
+    }  
+    .mud-overlay-dialog {
+        backdrop-filter: blur(5px);
+    }
+
+</style>
+
+
+    <MudDialog Class="custom-dialog">
+        <DialogContent>
+            Do you want to delete this components.
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+@code {
+    private bool isLoading = false;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    void Submit()  {
+        isLoading = true;
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    void Cancel() => MudDialog.Cancel();
+}

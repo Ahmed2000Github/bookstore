@@ -57,7 +57,7 @@ namespace BookStoreAPI.Controllers
         //        AvatarUrl = "/Avatars/default.png",
         //    };
         //    var result = userManager.CreateAsync(user,"12345678");
-          
+
         //    if (result.IsCompletedSuccessfully)
         //    {
         //        await userManager.AddToRoleAsync(user, AdminRole);
@@ -66,6 +66,20 @@ namespace BookStoreAPI.Controllers
         //    }
         //    return Ok("Admin created successfully.");
         //}
+        [HttpGet]
+        public ActionResult GetAllUsers()
+        {
+           var usersList =  userManager.Users;
+            var usersDtoList = usersList.Select(user => new UserResponseDto()
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                ImageUrl = user.AvatarUrl,
+                Email = user.Email,
+            });
+            return Ok( usersDtoList );
+        }
+
         [HttpPost]
         public async Task<ActionResult> LoginAdmin([FromBody] AdminLoginParamsDto parameters)
         {

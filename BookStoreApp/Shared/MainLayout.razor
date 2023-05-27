@@ -1,8 +1,15 @@
-﻿@using MudBlazor.Utilities;
+﻿@using BookStoreApp.Services;
+@using MudBlazor.Utilities;
 @inherits LayoutComponentBase
 
 <MudThemeProvider @ref="@_mudThemeProvider"  Theme="@MyCustomTheme" @bind-IsDarkMode="@_isDarkMode" />
-<MudDialogProvider />
+<MudDialogProvider FullWidth="true"
+                   MaxWidth="MaxWidth.ExtraSmall"
+                   CloseButton="false"
+                   DisableBackdropClick="true"
+                   NoHeader="false"
+                   Position="DialogPosition.Center"
+                   CloseOnEscapeKey="true" />
 <MudSnackbarProvider />
 
 <MudLayout>
@@ -33,17 +40,29 @@
         _drawerOpen = !_drawerOpen;
     }
     private string modeIcon => _isDarkMode ? Icons.Filled.DarkMode : Icons.Filled.LightMode;
-    private void ToggleDark() => _isDarkMode = !_isDarkMode;
+    private void ToggleDark()  {
+        _isDarkMode = !_isDarkMode;
+        CurrentThemeProvider.Instance.UpdateMode(_isDarkMode);
+    }
 
     private MudThemeProvider _mudThemeProvider;
-
+    protected override void OnInitialized()
+    {
+        CurrentThemeProvider.Instance.Initialize(MyCustomTheme, _isDarkMode);
+        CurrentThemeProvider.Instance.ThemeChanged += HandleThemeChanged;
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+       
         if (firstRender)
         {
             _isDarkMode = await _mudThemeProvider.GetSystemPreference();
-            StateHasChanged();
+            CurrentThemeProvider.Instance.UpdateMode(_isDarkMode);
         }
+    }
+    public void HandleThemeChanged(object sender, EventArgs e)
+    {
+        StateHasChanged();
     }
 
     MudTheme MyCustomTheme = new MudTheme()
@@ -66,7 +85,7 @@
                 AppbarText = "#000000",
                 DrawerText = "#000000",
                 DrawerIcon = "#000000",
-               
+                DarkLighten = "#F5F9FF"
                 
             },
             PaletteDark = new Palette()
@@ -80,6 +99,7 @@
                 DrawerText = "#FFFFFF",
                 AppbarText = "#FFFFFF",
                 DrawerIcon = "#FFFFFF",
+                DarkLighten = "#23333C"
             }
 
         };

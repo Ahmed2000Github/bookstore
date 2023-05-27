@@ -1,52 +1,134 @@
 ﻿@page "/admin/users"
 @inject HttpClient Http
+@using BookStoreApp.Components;
+@using BookStoreApp.Services;
 @using BookStoreApp.Shared
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
 
 <PageTitle>Users</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Users list</MudText>
-<MudText Class="mb-8">This component is for manage users</MudText>
-@if (forecasts == null)
+<style>
+    .custom-table{
+        background-color: transparent;
+    }
+    .paper{
+        background-color: @CurrentThemeProvider.Instance.Palette.DarkLighten;
+    }
+    .mud-overlay {
+        backdrop-filter: blur(5px);
+    }
+
+   
+</style>
+
+
+@if (users == null)
 {
-    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle"  Width="200px"  Height="40px" />
+    <br />
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="300px"  Height="20px" />
+    <br />
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle"  Height="200px" />
+   @* <div class="d-flex">
+        <MudSpacer />
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100px" Height="30px" />
+    </div>*@
 }
 else
 {
-    <MudTable Items="forecasts" Hover="true" SortLabel="Sort By" Elevation="0">
+    <MudText Typo="Typo.h3" GutterBottom="true">Users list</MudText>
+    <MudText Class="mb-8">This component is for manage users</MudText>
+   @* <div class="d-flex">
+        <MudSpacer/>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary">Secondary</MudButton>
+    </div>
+    <br />*@
+    <MudPaper Class="paper">
+    <MudTable Items="users" class="custom-table" Hover="true" Dense="true" SortLabel="Sort By" Elevation="25" Filter="new Func<UserViewModel,bool>(FilterFunc)">
+        <ToolBarContent>
+                <MudText Typo="Typo.h6">Users accounts</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString" AdornmentColor="Color.Inherit" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
         <HeaderContent>
-            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<WeatherForecast, object>(x=>x.Date)">Date</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.TemperatureC)">User Name</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.TemperatureF)">Email</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.Summary!)">Action</MudTableSortLabel></MudTh>
-        </HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<UserViewModel, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<UserViewModel, object>(x=>x.UserName)">User Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<UserViewModel, object>(x=>x.Email)">Email</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<UserViewModel, object>(x=>x.ImageUrl)">Avatar</MudTableSortLabel></MudTh>
+            <MudTh>Action</MudTh>
+        </HeaderContent> 
         <RowTemplate>
-            <MudTd DataLabel="Date">@context.Date</MudTd>
-            <MudTd DataLabel="Temp. (C)">@context.TemperatureC</MudTd>
-            <MudTd DataLabel="Temp. (F)">@context.TemperatureF</MudTd>
-            <MudTd DataLabel="Summary">@context.Summary</MudTd>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="User Name">@context.UserName</MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="ImageUrl">
+                    <MudImage Src="@(Constants.BaseUrl+context.ImageUrl)" Width="50"></MudImage>
+            </MudTd>
+                <MudTd DataLabel="Id">
+                    <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" OnClick="(e)=>DeleteUser(context.Id)" Color="Color.Error" />
+            </MudTd>
         </RowTemplate>
-        <PagerContent>
-            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
-        </PagerContent>
     </MudTable>
+        
+    </MudPaper>
+
 }
+<MudOverlay Visible="isVisible" DarkBackground="true" ZIndex="9999">
+    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+</MudOverlay>
+
 
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private UserViewModel[]? users;
+    private bool isVisible;
+
+    private string searchString = "";
+
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        CurrentThemeProvider.Instance.ThemeChanged += HandleThemeChanged;
+        users = await Http.GetFromJsonAsync<UserViewModel[]>("https://localhost:44318/api/User/GetAllUsers");
     }
-    public class WeatherForecast
+    public void HandleThemeChanged(object sender, EventArgs e)
     {
-        public DateTime Date { get; set; }
+        StateHasChanged();
+    }
+    private bool FilterFunc(UserViewModel user) => FilterFunc(user, searchString);
 
-        public int TemperatureC { get; set; }
+    private bool FilterFunc(UserViewModel user, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (user.UserName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (user.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (user.Id.Contains(searchString))
+            return true;
+        return false;
+    }
+    protected async void DeleteUser(string id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialogRef =   DialogService.Show<ConfirmDialog>("Warning" , options);
+        var result = await dialogRef.Result;
+        if (!result.Cancelled)
+        {
+            await PerformDeleteUser();
+        }
 
-        public string? Summary { get; set; }
-
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
+    private async Task PerformDeleteUser()
+    {
+        isVisible = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        isVisible = false;
+        StateHasChanged();
+        Snackbar.Add("The user was deleted successfully.", Severity.Success);
     }
 }
