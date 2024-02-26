@@ -166,7 +166,6 @@ namespace BookStoreAPI.Controllers
                 Title = parameters.Title,
                 Description = parameters.Description,
                 Price = parameters.Price,
-                Rate = 0,
                 EditionDate = DateTime.Parse(parameters.EditionDate),
                 ImageUrl = "\\Blankets\\" + blanketFileName,
                 DocUrl = "\\Documents\\" + documentFileName,
