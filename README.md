@@ -28,6 +28,11 @@ BookStore is a DotNet Web API built on ASP.NET Core using DotNet Core 6. It prov
    - Add, update, and delete authors.
    - Retrieve a list of authors.
    - View author details.
+## Conception
+Here is the initial conception that I made for this mini app
+
+<img src="https://github.com/Ahmed2000Github/bookstore/blob/master/BookStoreAPI/BookStoreConception.png?raw=true)" width="80%" height="80%">
+
 
 ## Getting Started
 
