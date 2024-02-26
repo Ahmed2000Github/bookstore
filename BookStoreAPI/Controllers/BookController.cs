@@ -5,6 +5,7 @@ using Core.Entities;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
@@ -39,6 +40,7 @@ namespace BookStoreAPI.Controllers
                 Id = book.Id,
                 Title = book.Title,
                 Description = book.Description,
+                Quantity = book.stockQuantity,
                 Price = book.Price,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl,
@@ -53,9 +55,19 @@ namespace BookStoreAPI.Controllers
             var booksList = book.entity.GetFull(b => b.Author);
             var filter = (Book _book) =>
             {
+                DateTime date;
+                try
+                {
+                    date = DateTime.Parse(parameters.EditionDate);
+                }
+                catch (Exception)
+                {
+                    date = DateTime.Parse("2000-01-01T00:00:00");
+                }
+                parameters.EditionDate = parameters.EditionDate.Trim().IsNullOrEmpty() ? "2000-01-01T00:00:00" : parameters.EditionDate;
                 return _book.Title == parameters.Title ||
                 _book.Price == parameters.Price ||
-                _book.EditionDate == DateTime.Parse(parameters.EditionDate ?? "") ||
+                _book.EditionDate == date  ||
                 _book.Author.Name == parameters.AuthorName;
             };
             var filterBookList = booksList.Where(filter);
@@ -64,6 +76,7 @@ namespace BookStoreAPI.Controllers
                 Id = book.Id,
                 Title = book.Title,
                 Description = book.Description,
+                Quantity = book.stockQuantity,
                 Price = book.Price,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl,
@@ -85,6 +98,7 @@ namespace BookStoreAPI.Controllers
                 Id = book.Id,
                 Title = book.Title,
                 Description = book.Description,
+                Quantity = book.stockQuantity,
                 Price = book.Price,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl
@@ -108,6 +122,7 @@ namespace BookStoreAPI.Controllers
                 Id = _book.Id,
                 Title = _book.Title,
                 Description = _book.Description,
+                Quantity = _book.stockQuantity,
                 Price = _book.Price,
                 EditionDate = _book.EditionDate,
                 ImageUrl = _book.ImageUrl,

@@ -44,35 +44,35 @@ namespace BookStoreAPI.Controllers
             this.roleManager = roleManager;
             this.memoryCache = memoryCache;
         }
-        [HttpPost]
-        public async Task<ActionResult> CreateAdmin()
-        {
-            if (!await roleManager.RoleExistsAsync(AdminRole))
-            {
-                var newRole = new IdentityRole(AdminRole);
-                await roleManager.CreateAsync(newRole);
-            }
-            var user = new AppUser
-            {
-                Email = "Admin@gmail.com",
-                UserName = "Admin@1234",
-                AvatarUrl = "/Avatars/default.png",
-            };
-            var result = userManager.CreateAsync(user, "12345678");
+        //[HttpPost]
+        //public async Task<ActionResult> CreateAdmin()
+        //{
+        //    if (!await roleManager.RoleExistsAsync(AdminRole))
+        //    {
+        //        var newRole = new IdentityRole(AdminRole);
+        //        await roleManager.CreateAsync(newRole);
+        //    }
+        //    var user = new AppUser
+        //    {
+        //        Email = "Admin@gmail.com",
+        //        UserName = "Admin@1234",
+        //        AvatarUrl = "/Avatars/default.png",
+        //    };
+        //    var result = userManager.CreateAsync(user, "12345678");
 
-            if (result.IsCompletedSuccessfully)
-            {
-                await userManager.AddToRoleAsync(user, AdminRole);
-                var authData = CreateToken(user, AdminRole);
-                return Ok(authData);
-            }
-            else
-            {
-                await Console.Out.WriteLineAsync(result.Result.Errors.ToString());
-                return Ok("Admin not created.");
-            }
+        //    if (result.IsCompletedSuccessfully)
+        //    {
+        //        await userManager.AddToRoleAsync(user, AdminRole);
+        //        var authData = CreateToken(user, AdminRole);
+        //        return Ok(authData);
+        //    }
+        //    else
+        //    {
+        //        await Console.Out.WriteLineAsync(result.Result.Errors.ToString());
+        //        return Ok("Admin not created.");
+        //    }
             
-        }
+        //}
         [HttpGet, Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
         public async Task<ActionResult> GetAllUsersAsync()
         {
