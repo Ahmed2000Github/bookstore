@@ -1,11 +1,36 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+
+<CascadingAuthenticationState>
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <AuthorizeRouteView  RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" >
+            <NotAuthorized>
+                Not authorized to see this content.
+            </NotAuthorized>
+        </AuthorizeRouteView>
     </Found>
     <NotFound>
         <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
+        <style>
+            .container {
+                position:absolute;
+                width:100%;
+                height:100%;
+            }
+        </style>
+        <div class="d-flex justify-center align-center container">
+                <img Src="https://localhost:5001/not-found.svg" width="50%" />
+        </div>
+           
     </NotFound>
+
 </Router>
+</CascadingAuthenticationState>
+@code{
+    protected async override Task OnInitializedAsync()
+        {
+        //await LocalStorage.SetItemAsync("AccessToken", "");
+        //await LocalStorage.SetItemAsync("RefreshToken", "");
+        }
+}

@@ -1,0 +1,36 @@
+﻿@inherits LayoutComponentBase
+@inject MudThemeProvider _mudThemeProvider
+<MudThemeProvider @ref="@_mudThemeProvider" Theme="CurrentThemeProvider.Instance.MyCustomTheme" @bind-IsDarkMode="_mudThemeProvider.IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-16 pt-16">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+@code {
+
+
+    protected override void OnInitialized()
+    {
+
+        CurrentThemeProvider.Instance.Initialize(_mudThemeProvider.IsDarkMode);
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            _mudThemeProvider.IsDarkMode = await _mudThemeProvider.GetSystemPreference();
+
+            CurrentThemeProvider.Instance.UpdateMode(_mudThemeProvider.IsDarkMode);
+            StateHasChanged();
+        }
+    }
+  
+
+  
+}

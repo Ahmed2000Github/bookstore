@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 
 namespace BookStoreAPI.Controllers
 {
@@ -17,12 +18,16 @@ namespace BookStoreAPI.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IUnitOfWork<Author> author;
         private readonly IUnitOfWork<Book> book;
+        private readonly IUnitOfWork<Rating> rating;
+        private readonly IUnitOfWork<Sell> sell;
 
-        public BookController(IWebHostEnvironment webHostEnvironment, IUnitOfWork<Author> author, IUnitOfWork<Book> book)
+        public BookController(IWebHostEnvironment webHostEnvironment, IUnitOfWork<Author> author, IUnitOfWork<Book> book, IUnitOfWork<Rating> rating, IUnitOfWork<Sell> sell)
         {
             _webHostEnvironment = webHostEnvironment;
             this.author = author;
             this.book = book;
+            this.rating = rating;
+            this.sell = sell;
         }
 
         [HttpGet, Authorize(AuthenticationSchemes = "Bearer")]
@@ -35,7 +40,6 @@ namespace BookStoreAPI.Controllers
                 Title = book.Title,
                 Description = book.Description,
                 Price = book.Price,
-                Rate = book.Rate,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl,
                 AuthorName = book.Author.Name ?? ""
@@ -61,7 +65,6 @@ namespace BookStoreAPI.Controllers
                 Title = book.Title,
                 Description = book.Description,
                 Price = book.Price,
-                Rate = book.Rate,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl,
                 AuthorName = book.Author.Name ?? ""
@@ -83,7 +86,6 @@ namespace BookStoreAPI.Controllers
                 Title = book.Title,
                 Description = book.Description,
                 Price = book.Price,
-                Rate = book.Rate,
                 EditionDate = book.EditionDate,
                 ImageUrl = book.ImageUrl
             });
@@ -107,7 +109,6 @@ namespace BookStoreAPI.Controllers
                 Title = _book.Title,
                 Description = _book.Description,
                 Price = _book.Price,
-                Rate = _book.Rate,
                 EditionDate = _book.EditionDate,
                 ImageUrl = _book.ImageUrl,
                 Author = new Author
@@ -150,7 +151,7 @@ namespace BookStoreAPI.Controllers
                 Title = parameters.Title,
                 Description = parameters.Description,
                 Price = parameters.Price,
-                Rate = 0,
+                //Rate = 0,
                 EditionDate = DateTime.Parse(parameters.EditionDate),
                 ImageUrl = "\\Blankets\\" + blanketFileName,
                 DocUrl = "\\Documents\\" + documentFileName,
@@ -164,6 +165,7 @@ namespace BookStoreAPI.Controllers
         [HttpPut, Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
         public async Task<ActionResult> UpdateBook( [FromForm] BookUpdateParamsDto parameters)
         {
+
             var _book = book.entity.GetById(parameters.BookId);
             if (_book is null)
             {
@@ -195,19 +197,52 @@ namespace BookStoreAPI.Controllers
         }
 
         [HttpPost, Authorize(AuthenticationSchemes = "Bearer", Roles = "USER")]
-        public ActionResult AddRateToBook([FromBody][Required] Guid bookId)
+        public ActionResult AddRateToBook([FromBody][Required] RatingParamsDto parameters)
         {
-            var _book = book.entity.GetById(bookId);
+            var _book = book.entity.GetById(parameters.BookId);
             if (_book is null)
             {
                 return NotFound("The Book not found.");
             }
-            _book.Rate += 1;
-            book.entity.Update(_book);
-            book.save();
+            var newRate = new Rating()
+            {
+                UserId = (new Guid()).ToString(),
+                BookId = parameters.BookId,
+                Rate = parameters.Rate,
+                Date = DateTime.Now
+            };
+            rating.entity.Add(newRate);
+            rating.save();
             return Ok("Rate added to Book successfully.");
         }
 
+        [HttpPost, Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
+        public ActionResult AddSell([FromBody][Required] SellParamsDto parameters)
+        {
+            var _book = book.entity.GetById(parameters.BookId);
+            if (_book is null)
+            {
+                return NotFound("The Book not found.");
+            }
+            if (parameters.Quantity <= 0)
+            {
+                return BadRequest("The provided qunatity is inacceptable.");
+            }
+            if (_book.stockQuantity<parameters.Quantity)
+            {
+                return Unauthorized("The requested quantity not available now.");
+            }
+            var newSell = new Sell()
+            {
+                UserId = new Guid(User.FindFirstValue(ClaimTypes.UserData)).ToString(),
+                BookId = parameters.BookId,
+                Quantity = parameters.Quantity,
+                Date = DateTime.Now
+            };
+            sell.entity.Add(newSell);
+            sell.save();
+            return Ok("Rate added to Book successfully.");
+        }
 
         private async Task UpdateFile(string filePath,IFormFile newFile) 
         {
@@ -216,13 +251,30 @@ namespace BookStoreAPI.Controllers
                 await newFile.CopyToAsync(stream);
             }
         }
-
-        [HttpDelete("{id}")]
-        public ActionResult DeleteBook(Guid id)
+        private void DeleteFile(string filePath)
         {
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+        }
+        [HttpDelete("{id}"), Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
+        public async Task<ActionResult> DeleteBookAsync(Guid id)
+        {
+            
+            var _book = book.entity.GetById(id);
+            if (_book is null)
+            {
+                return NotFound("The Book not found.");
+            }
+            string wwwrootPath = _webHostEnvironment.WebRootPath;
+            DeleteFile(wwwrootPath + _book!.ImageUrl);
+            DeleteFile(wwwrootPath + _book!.DocUrl);
             book.entity.Delete(id);
             book.save();
             return Ok("Book was deleted successfully.");
         }
+      
+
     }
 }

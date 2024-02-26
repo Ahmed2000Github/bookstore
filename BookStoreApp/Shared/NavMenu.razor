@@ -1,6 +1,24 @@
-﻿<MudNavMenu Bordered="true" Color="Color.Primary">
+﻿<MudNavMenu Bordered="true" Style="height:100vh" Color="Color.Primary" Class="d-flex align-content-space-between flex-wrap">
+    <div style="width:100%">
     <MudNavLink Href="admin/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.SpaceDashboard">Dashboard</MudNavLink>
     <MudNavLink Href="admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ManageAccounts">Users</MudNavLink>
     <MudNavLink Href="admin/books" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.AutoStories">Books</MudNavLink>
     <MudNavLink Href="admin/authors" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.LocalLibrary">Authors</MudNavLink>
+    </div>
+    <br />
+    <div Style="width:100%;color:red !important;" @onclick="Onclick" class="mb-3mud-nav-item mud-ripple">
+        
+        <span class="mud-nav-link"><MudIcon Icon="@Icons.Material.Filled.Logout" Class="mud-nav-link-icon mud-nav-link-icon-default" Color="Color.Error" /> <div class="mud-nav-link-text">Logout</div> </span>
+    </div>
 </MudNavMenu>
+
+@code{
+    private async Task Onclick()
+    {
+        Console.WriteLine("nsnsnnsnnsnn");
+        await LocalStorage.SetItemAsync("AccessToken", "");
+        await LocalStorage.SetItemAsync("RefreshToken", "");
+        await AuthStateProvider.GetAuthenticationStateAsync();
+        NavigationManager.NavigateTo("/admin/login");
+    }
+}

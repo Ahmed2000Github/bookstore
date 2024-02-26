@@ -1,0 +1,165 @@
+﻿@layout LoginLayout
+@page "/admin/login"
+
+
+
+<style>
+    body {
+        background-image: url("https://localhost:4001/login-background.jpg");
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+    }
+
+    .mud-overlay {
+        backdrop-filter: blur(20px);
+    }
+
+    .mud-paper {
+        background-color: @CurrentThemeProvider.Instance.Palette.DarkLighten;
+    }
+
+    .mud-input-label {
+        background-color: @CurrentThemeProvider.Instance.Palette.DarkLighten;
+        color: @CurrentThemeProvider.Instance.Palette.TextPrimary.SetAlpha(150) !important;
+    }
+
+    .mud-input-helper-text {
+        color: @CurrentThemeProvider.Instance.Palette.TextPrimary.SetAlpha(100) !important;
+    }
+
+
+    
+
+</style>
+
+<MudBreakpointProvider>
+    <MudHidden Breakpoint="Breakpoint.MdAndUp" Invert="true">
+        <style>
+            .mud-overlay-content {
+                width: 60% !important;
+            }
+        </style>
+    </MudHidden>
+    <MudHidden Breakpoint="Breakpoint.MdAndDown" Invert="true">
+        <style>
+            .mud-overlay-content {
+                width: 80%;
+            }
+        </style>
+    </MudHidden>
+</MudBreakpointProvider>
+<MudOverlay Visible="true" DarkBackground="true" ZIndex="9">
+    @if (!loadingOverlayIsVisible)
+    {
+        <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudCard Class="card-background">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5"> Login to admin space</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+
+                    <MudTextField Label="UserName or Email" Variant="Variant.Outlined" HelperText="Max 20 characters"
+                              @bind-Value="model.Login" For="@(() => model.Login)" />
+                    <MudTextField InputType="@PasswordInput" Label="Password" Variant="Variant.Outlined" HelperText="Max 300 characters"
+                              @bind-Value="model.Password" For="@(() => model.Password)" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" />
+
+                </MudCardContent>
+                <MudCardActions>
+                    <MudSpacer />
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </EditForm>
+    }
+    else
+    {
+        <style>
+            .mud-overlay-content {
+                display: flex;
+                justify-content: center;
+                align-content: center;
+            }
+        </style>
+        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+    }
+   
+</MudOverlay>
+ 
+
+@code {
+    private AdminLoginFormViewModel model = new()
+    {
+            Login = "Admin@1234",
+            Password = "12345678"
+    };
+    private bool loadingOverlayIsVisible = false;
+    bool isShow = false;
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentThemeProvider.Instance.ThemeChanged += HandleThemeChanged;
+    }
+
+    public void HandleThemeChanged(object sender, EventArgs e)
+    {
+        Console.WriteLine(CurrentThemeProvider.Instance.Palette.Background.Value);
+        StateHasChanged();
+    }
+
+
+    void ButtonTestclick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+    private async Task OnValidSubmit(EditContext editContext)
+    {
+        loadingOverlayIsVisible = true;
+        StateHasChanged();
+        var response = await Http.PostAsJsonAsync<AdminLoginFormViewModel>("api/User/LoginAdmin", model);
+        switch (response.StatusCode)
+        {
+            case HttpStatusCode.OK:
+
+                Snackbar.Add("The login completed successfuly.", Severity.Success);
+                var tokenData = await response.Content.ReadFromJsonAsync<AdminTokenData>();
+                await LocalStorage.SetItemAsync("AccessToken", tokenData.AccessToken);
+                await LocalStorage.SetItemAsync("RefreshToken", tokenData.RefreshToken);
+                await AuthStateProvider.GetAuthenticationStateAsync();
+                NavigationManager.NavigateTo("/admin/");
+                break;
+            case HttpStatusCode.NotFound:
+
+                Snackbar.Add((await response.Content.ReadAsStringAsync()), Severity.Error);
+                break;
+            case HttpStatusCode.Unauthorized:
+
+                Snackbar.Add((await response.Content.ReadAsStringAsync()), Severity.Error);
+                break;
+            case HttpStatusCode.BadRequest:
+
+                Snackbar.Add((await response.Content.ReadAsStringAsync()), Severity.Error);
+                break;
+            default:
+                Snackbar.Add("An Error Occured while trying to create the new book.", Severity.Error);
+                break;
+        }
+        loadingOverlayIsVisible = false;
+        StateHasChanged();
+    }
+}

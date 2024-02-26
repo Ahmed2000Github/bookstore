@@ -1,7 +1,9 @@
 ﻿using BookStoreAPI.Dto.UserDto;
 using BookStoreAPI.Services;
+using Core.Entities;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,46 +44,67 @@ namespace BookStoreAPI.Controllers
             this.roleManager = roleManager;
             this.memoryCache = memoryCache;
         }
-        //[HttpPost]
-        //public async Task<ActionResult> CreateAdmin()
-        //{
-        //    if (!await roleManager.RoleExistsAsync(AdminRole))
-        //    {
-        //        var newRole = new IdentityRole(AdminRole);
-        //        await roleManager.CreateAsync(newRole);
-        //    }
-        //    var user = new AppUser
-        //    {
-        //        Email = "Admin@gmail.com",
-        //        UserName = "Admin@1234",
-        //        AvatarUrl = "/Avatars/default.png",
-        //    };
-        //    var result = userManager.CreateAsync(user,"12345678");
-
-        //    if (result.IsCompletedSuccessfully)
-        //    {
-        //        await userManager.AddToRoleAsync(user, AdminRole);
-        //        var authData = CreateToken(user, AdminRole);
-        //        return Ok(authData);
-        //    }
-        //    return Ok("Admin created successfully.");
-        //}
-        [HttpGet]
-        public ActionResult GetAllUsers()
+        [HttpPost]
+        public async Task<ActionResult> CreateAdmin()
         {
-           var usersList =  userManager.Users;
-            var usersDtoList = usersList.Select(user => new UserResponseDto()
+            if (!await roleManager.RoleExistsAsync(AdminRole))
+            {
+                var newRole = new IdentityRole(AdminRole);
+                await roleManager.CreateAsync(newRole);
+            }
+            var user = new AppUser
+            {
+                Email = "Admin@gmail.com",
+                UserName = "Admin@1234",
+                AvatarUrl = "/Avatars/default.png",
+            };
+            var result = userManager.CreateAsync(user, "12345678");
+
+            if (result.IsCompletedSuccessfully)
+            {
+                await userManager.AddToRoleAsync(user, AdminRole);
+                var authData = CreateToken(user, AdminRole);
+                return Ok(authData);
+            }
+            else
+            {
+                await Console.Out.WriteLineAsync(result.Result.Errors.ToString());
+                return Ok("Admin not created.");
+            }
+            
+        }
+        [HttpGet, Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
+        public async Task<ActionResult> GetAllUsersAsync()
+        {
+            var usersList = userManager.Users.ToList();
+            var usersDtoList = new List<UserResponseDto>();
+            foreach (var user in usersList)
+            {
+                var role = (await userManager.GetRolesAsync(user)).FirstOrDefault();
+                if (role == UserRole)
+                {
+                    usersDtoList.Add(new UserResponseDto()
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        ImageUrl = user.AvatarUrl,
+                        Email = user.Email,
+                    });
+                }
+
+            }
+            usersList.Select(user => new UserResponseDto()
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 ImageUrl = user.AvatarUrl,
                 Email = user.Email,
             });
-            return Ok( usersDtoList );
+            return Ok(usersDtoList);
         }
 
         [HttpPost]
-        public async Task<ActionResult> LoginAdmin([FromBody] AdminLoginParamsDto parameters)
+        public async Task<ActionResult> LoginAdmin(AdminLoginParamsDto parameters)
         {
             var user = await userManager.FindByNameAsync(parameters.Login);
             if (user is null)
@@ -97,11 +120,15 @@ namespace BookStoreAPI.Controllers
                 var authData = CreateToken(user, AdminRole);
                 return Ok(authData);
             }
-            return BadRequest("The password is incorrect.");
+            else
+            {
+                return BadRequest("The password is incorrect.");
+            }
+
         }
 
         [HttpPost]
-        public async Task<ActionResult> Login([FromBody] UserLoginParamsDto parameters) 
+        public async Task<ActionResult> Login([FromBody] UserLoginParamsDto parameters)
         {
             var user = await userManager.FindByNameAsync(parameters.Login);
             if (user is null)
@@ -114,16 +141,16 @@ namespace BookStoreAPI.Controllers
             }
             if (await userManager.CheckPasswordAsync(user, parameters.Password))
             {
-              var authData =   CreateToken(user, UserRole);
+                var authData = CreateToken(user, UserRole);
                 return Ok(authData);
             }
-           return  BadRequest("The password is incorrect.");
+            return BadRequest("The password is incorrect.");
         }
 
         [HttpPost]
         public async Task<ActionResult> Register([FromBody] UserRegistrationParamsDto parameters)
         {
-            
+
             if (!await roleManager.RoleExistsAsync(UserRole))
             {
                 var newRole = new IdentityRole(UserRole);
@@ -133,7 +160,7 @@ namespace BookStoreAPI.Controllers
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(20)
             };
-                memoryCache.Set(parameters.Email, parameters, cacheEntryOptions);
+            memoryCache.Set(parameters.Email, parameters, cacheEntryOptions);
             sendEmail(parameters.Email);
             return Ok("Email sent successfully.");
         }
@@ -164,9 +191,9 @@ namespace BookStoreAPI.Controllers
             }
             return BadRequest("Key or Email not valid.");
         }
-       
+
         [HttpPost]
-        public async Task<ActionResult> ResetPassword( [FromBody] ResetPasswordParamsDto parameters)
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordParamsDto parameters)
         {
             var user = await userManager.FindByEmailAsync(parameters.Email);
             if (user is null)
@@ -207,12 +234,29 @@ namespace BookStoreAPI.Controllers
             return BadRequest("Key or Email not valid");
         }
 
-        private AuthenticationResponseDto CreateToken(AppUser user,string role)
+        [HttpDelete("{id}"), Authorize(AuthenticationSchemes = "Bearer", Roles = "ADMIN")]
+        public async Task<ActionResult> DeleteUser(string id)
+        {
+            var user = await userManager.FindByIdAsync(id);
+            var result = await userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                return Ok("User deleted successfully.");
+            }
+            else
+            {
+                return BadRequest("Failed to delete user.");
+            }
+
+        }
+
+        private AuthenticationResponseDto CreateToken(AppUser user, string role)
         {
             List<Claim> accessTokenClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier,user.UserName),
+                new Claim(ClaimTypes.UserData,user.Id),
                 new Claim(ClaimTypes.Uri,user.AvatarUrl),
                 new Claim(ClaimTypes.Role, role)
             };
@@ -235,7 +279,7 @@ namespace BookStoreAPI.Controllers
             var v2 = new JwtSecurityTokenHandler().WriteToken(refreshToken);
             var auth = new AuthenticationResponseDto
             {
-                AccessToken = v1 ,
+                AccessToken = v1,
                 RefreshToken = v2,
                 AccessTokenExpireIn = DateTime.Now.AddDays(1),
                 RefreshTokenExpireIn = DateTime.Now.AddDays(2),
@@ -254,11 +298,11 @@ namespace BookStoreAPI.Controllers
                 "Use this key < " + verificationKey + " > to verify your email");
             if (result)
             {
-                memoryCache.Set(email+"key", verificationKey, cacheEntryOptions);
+                memoryCache.Set(email + "key", verificationKey, cacheEntryOptions);
             }
 
         }
-        private bool VerifyKey(string email,string key)
+        private bool VerifyKey(string email, string key)
         {
             if (memoryCache.TryGetValue(email + "key", out string verificationKey))
             {

@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BookStoreApp.ViewModels
+namespace BookStoreApp.ViewModels.Admin
 {
-    public class UserViewModel
+    public class AdminUserViewModel
     {
         public string Id { get; set; }
         public string UserName { get; set; }

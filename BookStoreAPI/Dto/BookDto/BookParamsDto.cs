@@ -17,6 +17,6 @@ namespace BookStoreAPI.Dto.BookDto
         [Required]
         public IFormFile Document { get; set; }
         [Required]
-        public Guid  AuthorId { get; set; }
+        public Guid AuthorId { get; set; }
     }
-}
+    }
